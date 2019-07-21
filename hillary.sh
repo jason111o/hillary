@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #### Written by Jason Pippin
-## Version 1.2 ##
+## Version 1.3 ##
 
 ######################################Main######################################
 main() {
@@ -226,7 +226,7 @@ run_bleachbit() {
 
 partition_display() {
 	clear
-	echo -e "${YELLOW}Here is what we know about the memory of your system..."
+	echo -e "${YELLOW}Here is what we know about the drives/mounts of your file system..."
 	echo -e "${WHITE}================================================================================${NOCOLOR}"
 	df -h
 	echo -e "${WHITE}================================================================================${NOCOLOR}"
