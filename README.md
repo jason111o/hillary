@@ -1,7 +1,12 @@
 # hillary
 My dirty bash script Hillary should've used ;)
+# Created by: Jason Pippin 2019
+# https://github.com/jason111o/hillary
 
 Make the file executable then run as root
+or use the bash command
+
+The first line printed to the screen is the version as it checks for dependencies
 
 It will check for dependencies needed to run, then will start off by displaying memory info.
 You can choose to clean cache with 3 options.
@@ -23,8 +28,8 @@ partition until it is full to ensure that all files that were flagged by deletio
 
 After the file is as large as it can be it will then be deleted as well, but now only zeroes can be recovered
 
-If you cancel or the script is interupted for any reason, I have included a find command to get the file
+If you cancel or the script is interrupted for any reason, I have included a find command to get the file
 that was created so it can be deleted to free up space. It is the last part of the script to run so don't
-worry if you forgot where which partition you instructed the script to zero out
+worry if you forgot where or which partition you instructed the script to zero out
 
 All contributions welcome.
