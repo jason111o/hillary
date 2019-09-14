@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #### Written by Jason Pippin
-## Version 1.3 ##
+version="hillary-1.4"
 
 ######################################Main######################################
 main() {
-	help_menu
+	echo $version
 	check_su
 	check_for_dependencies
 	dependencies_needed
@@ -19,12 +19,6 @@ main() {
 }
 ################################################################################
 
-#### ERROR Codes on exit
-# 99 - not a sudoer or root
-# 10 - missing_dependencies
-# 11 - free_cache
-# 12 - could not remove the "zero_file.txt"
-
 #### Set some prompt colors
 RED='\033[01;31m'
 GREEN='\033[01;32m'
@@ -33,25 +27,17 @@ CYAN='\033[01;36m'
 WHITE='\033[01;37m'
 NOCOLOR='\033[0m'
 
-#### Pass -h or --help option to see help menu
-help_menu() {
-	if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
-		echo 'Here is the help menu' | less
-		read anything
-	fi
-}
-
 #### Check for super powers
 check_su() {
 	if [[ $EUID != 0 ]]; then
 		echo -e "${WHITE}You do not have permission!${NOCOLOR}"; sleep 1
-		exit 99
+		exit 1
 	fi
 }
 
 #### Check for dependencies
 check_for_dependencies() {
-	depends=("sudo" "sleep" "bleachbit" "dcfldd" "free" "sync")
+	depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync")
 	depends_not_installed=()
 	echo -e "Checking dependencies..."
 	for x in ${depends[@]}; do
@@ -96,7 +82,7 @@ dependencies_needed() {
 		elif [[ $ans == "e" ]]; then
 			echo -e "${WHITE}Exiting...${NOCOLOR}\n"
 			sleep 1
-			exit 10
+			exit 1
 		elif [[ "$len" == 0 ]]; then
 			break
 		fi
@@ -135,7 +121,7 @@ free_cache() {
 			elif [[ $num == "n" ]]; then
 				break
 			else
-				exit 10
+				exit 1
 			fi
 		done
 	elif [[ $ans == "n" ]]; then
@@ -147,11 +133,12 @@ free_cache() {
 	fi
 }
 
-#### Set all users whome have a home directory to an array
+#### Set all users whom have a home directory to an array
 user_set() {
 	all_users=()
 	for x in /home; do
-		all_users+=($(ls "$x"))
+		if [[ -d "$x" ]]; then
+			all_users+=($(ls "$x"))
 	done
 }
 
@@ -169,7 +156,7 @@ run_bleachbit() {
 	clear
 	echo -e "${CYAN}We will be using bleachbit as the standard tool for marking directories and files then removing them."
 	echo -e "After this is done, we will not rely on bleachbit to overwrite the systems free space for security."
-	echo -e "We will instead do it ourselves with the \"dcfldd\" forensic tool and \"sync\" for journald fs."
+	echo -e "We will instead do it ourselves with the \"dd\" low level byte tool and \"sync\" for journald fs."
 	echo -e "${YELLOW}Note: Bleachbit will run in graphical mode for standard users."
 	echo -e "${WHITE}Start Bleachbit?\nY/n/e${NOCOLOR}"
 	read ans
@@ -177,8 +164,6 @@ run_bleachbit() {
 	if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 		for x in ${all_users[@]}; do
 			echo -e "\n${WHITE}Starting \"bleachbit\" as user ${YELLOW}\"$x\"${NOCOLOR}"
-			#echo -e "${WHITE}Continue?\nY/n/e${NOCOLOR}"
-			#read anything
 			if [[ $anything != "n" ]] && [[ $anything != "e" ]]; then
 				su $x -c bleachbit 2>/dev/null
 				sleep 1
@@ -251,7 +236,7 @@ zero_file() {
 	if [[ $path == "e" ]]; then
 		echo -e "${WHITE}Exiting...${NOCOLOR}"
 		sleep 1
-		exit 4
+		exit 1
 	elif [[ ! -d $path ]]; then
 		echo -e "${WHITE}\"${NOCOLOR}$path${WHITE}\" does not exist... moving on${NOCOLOR}"
 	elif [[ -d $path ]]; then
@@ -273,7 +258,7 @@ zero_file() {
 			while [[ $count -le $overwrite ]]; do
 				echo -e "\n${YELLOW}Now growing zero file to overwrite free disk space..."
 				echo -e "Pass [$count]${NOCOLOR}"
-				dcfldd if=/dev/zero of="$path"/zero_file.img
+				dd if=/dev/zero of="$path"/zero_file.img
 				#### Uncomment the following to list contents of chosen directory
 				#echo -e "\n${WHITE}Contents of \"${YELLOW}$path${NOCOLOR}\" ${WHITE}are:${NOCOLOR}"
 				#ls $path
@@ -295,7 +280,7 @@ zero_file() {
 				echo "Removed successfully"
 			else
 				echo "ERROR: problem removing zero_file.img"
-				exit 12
+				exit 1
 			fi
 			sleep 1
 			#### Uncomment the following to list the contents of chosen directory
@@ -343,7 +328,7 @@ find_zero_files() {
 		elif [[ $ans == "e" ]]; then
 			echo -e "${WHITE}Exiting...${NOCOLOR}"
 			sleep 1
-			exit 6
+			exit 1
 		fi
 	elif [[ $ans == "e" ]]; then
 		echo -e "${WHITE}Exiting...${WHITE}"
