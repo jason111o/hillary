@@ -1,4 +1,4 @@
-# hillary-1.5
+# hillary
 My dirty bash script Hillary should've used ;)
 # Created by: Jason Pippin 2019
 # https://github.com/jason111o/hillary
