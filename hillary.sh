@@ -139,6 +139,7 @@ user_set() {
 	for x in /home; do
 		if [[ -d "$x" ]]; then
 			all_users+=($(ls "$x"))
+		fi
 	done
 }
 
