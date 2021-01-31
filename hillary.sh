@@ -21,7 +21,6 @@ main() {
 
 #### Set some prompt colors
 RED='\033[01;31m'
-GREEN='\033[01;32m'
 YELLOW='\033[01;33m'
 CYAN='\033[01;36m'
 WHITE='\033[01;37m'
@@ -40,14 +39,12 @@ check_for_dependencies() {
 	depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync")
 	depends_not_installed=()
 	echo -e "Checking dependencies..."
-	for x in ${depends[@]}; do
-		xpath=$(command -v $x)
+	for x in "${depends[@]}"; do
+		xpath=$(command -v "$x")
 		if [[ "$xpath" ]]; then
 			sleep 0.25
-			#echo -e "${WHITE}[${GREEN}+${WHITE}] $x"
 		elif [[ ! "$xpath" ]]; then
 			sleep 0.25
-			#echo -e "${WHITE}[${RED}-${WHITE}] $x"
 			depends_not_installed+=("$x")
 		fi
 	done
@@ -56,14 +53,14 @@ check_for_dependencies() {
 #### If dependencies are needed then prompt the user to install them
 dependencies_needed() {
 	len=${#depends_not_installed}
-	while [ $len -gt 0 ]; do
+	while [ "$len" -gt 0 ]; do
 		echo -e "${WHITE}Install missing dependencies? y/n/e${NOCOLOR}"
-		read ans
+		read -r ans
 		if [[ "$ans" == "y" ]]; then
-			for x in ${depends_not_installed[@]}; do
+			for x in "${depends_not_installed[@]}"; do
 				apt install  "$x"
 				if [[ $? != 0 ]]; then
-					echo -e "${YELLOW}"$x" was not found in your distribution package sources."
+					echo -e "${YELLOW}$x was not found in your distribution package sources."
 					echo -e "Check your distros documentation.${NOCOLOR}\n"
 				fi
 				check_for_dependencies
@@ -74,7 +71,7 @@ dependencies_needed() {
 			done
 		elif [[ "$ans" == "n" ]]; then
 			echo -e "${CYAN}This script needs..."
-			for x in ${depends_not_installed[@]}; do
+			for x in "${depends_not_installed[@]}"; do
 				echo -e "${WHITE}----> ${RED}$x"
 				sleep 0.5
 			done
@@ -95,28 +92,28 @@ free_cache() {
 	echo -e "${YELLOW}Current memory stat:${NOCOLOR}"
 	free -h
 	echo -e "${CYAN}Would you like to free memory/caches?${WHITE}\nY/n/e${NOCOLOR}"
-	read ans
+	read -r ans
 	if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 		drop_caches_path=$(find /proc -name drop_caches 2>/dev/null)
 		echo -e "${YELLOW}Applications/Programs may start slower after cleaning as the system resumes new cache creations."
 		echo -e "${WHITE}1. Free page cache"
 		echo -e "2. Free reclaimable slab objects (includes dentries and inodes)"
 		echo -e "3. Free page cache and slab objects\n1/2/3/n${NOCOLOR}"
-		read num
+		read -r num
 		while true; do
 			if [[ $num != 1 ]] && [[ $num != 2 ]] && [[ $num != 3 ]] && [[ $num != "n" ]]; then
 				echo -e "${YELLOW}You must enter a 1, 2, or 3 for cache or \"n\" to continue.${NOCOLOR}"
 				echo -e "${WHITE}1/2/3/n${NOCOLOR}"
-				read num
+				read -r num
 			elif [[ $num == 1 ]] || [[ $num == 2 ]] || [[ $num == 3 ]]; then
 				# sync the system before clearing cache
 				sync
-				echo $num > $drop_caches_path
+				echo "$num" > "$drop_caches_path"
 				sleep 1
 				echo -e "${YELLOW}New memory stat:${NOCOLOR}"
 				free -h
 				echo -e "\n${CYAN}Press ENTER to continue.${NOCOLOR}"
-				read anything
+				read -r anything
 				break
 			elif [[ $num == "n" ]]; then
 				break
@@ -125,7 +122,7 @@ free_cache() {
 			fi
 		done
 	elif [[ $ans == "n" ]]; then
-		break
+		return
 	elif [[ $ans == "e" ]]; then
 		echo -e "${WHITE}Exiting...${NOCOLOR}"
 		sleep 1
@@ -136,9 +133,9 @@ free_cache() {
 #### Set all users whom have a home directory to an array
 user_set() {
 	all_users=()
-	for x in /home; do
+	for x in /home/*; do
 		if [[ -d "$x" ]]; then
-			all_users+=($(ls "$x"))
+			all_users+=("$x")
 		fi
 	done
 }
@@ -146,9 +143,9 @@ user_set() {
 #### Setting up bleachbit to run all cleaners, but the swap and writing zeroes
 bleach_func() {
 	cleaners=($(bleachbit -l | sed '/memory/d' | sed '/free/d'))
-	for x in ${cleaners[@]}; do
+	for x in "${cleaners[@]}"; do
 		echo -e "\n${YELLOW}$x${NOCOLOR}"
-		bleachbit -c $x 2>/dev/null
+		bleachbit -c "$x" 2>/dev/null
 	done
 }
 #### Start bleachbit GUI for standard users then run the above function for root
@@ -160,13 +157,13 @@ run_bleachbit() {
 	echo -e "We will instead do it ourselves with the \"dd\" low level byte tool and \"sync\" for journald fs."
 	echo -e "${YELLOW}Note: Bleachbit will run in graphical mode for standard users."
 	echo -e "${WHITE}Start Bleachbit?\nY/n/e${NOCOLOR}"
-	read ans
+	read -r ans
 	#### If the answer is yes then bleachbit will be run by every user listed in the /home directory
 	if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
-		for x in ${all_users[@]}; do
+		for x in "${all_users[@]}"; do
 			echo -e "\n${WHITE}Starting \"bleachbit\" as user ${YELLOW}\"$x\"${NOCOLOR}"
 			if [[ $anything != "n" ]] && [[ $anything != "e" ]]; then
-				su $x -c bleachbit 2>/dev/null
+				su "$x" -c bleachbit 2>/dev/null
 				sleep 1
 			elif [[ $anything == "n" ]]; then
 				break
@@ -180,17 +177,17 @@ run_bleachbit() {
 		if [[ $EUID == 0 ]]; then
 			echo -e "\n${WHITE}Starting \"bleachbit\" as user ${RED}\"root\"${NOCOLOR}"
 			echo -e "${WHITE}Continue?\nY/n/e${NOCOLOR}"
-			read anything
+			read -r anything
 			if [[ $anything != "n" ]] && [[ $anything != "e" ]]; then
 				echo -e "${WHITE}Run in graphical mode?\ny/N${NOCOLOR}"
-				read ans
+				read -r ans
 				if [[ $ans != "y" ]]; then
 					bleach_func
 				elif [[ $ans == "y" ]]; then
 					bleachbit 2>/dev/null
 				fi
 			elif [[ $anything == "n" ]]; then
-				break
+				return
 			elif [[ $anything == "e" ]]; then
 				echo -e "${WHITE}Exiting...${NOCOLOR}"
 				sleep 2
@@ -206,7 +203,7 @@ run_bleachbit() {
 		sleep 1
 		exit 0
 	elif [[ $ans == "n" ]]; then
-		break
+		return
 	fi
 }
 
@@ -222,15 +219,15 @@ zero_file() {
 	#### Ask user to type in a path to create a zero file and how many times to do it
 	echo -e "${CYAN}\nType in path  as shown under \"Mounted On\""
 	echo -e "${WHITE}e/ENTER${NOCOLOR}"
-	read path
+	read -r path
 	if [[ -d $path ]]; then
 		echo -e "${CYAN}How many times would you like to overwrite?${NOCOLOR}"
-		read overwrite
+		read -r overwrite
 		while true; do
 			if [[ $overwrite -ge 1 ]] && [[ $overwrite -le 10 ]]; then
 				break
 			else
-				read -p "Enter a number from 1 to 10: " overwrite
+				read -r -p "Enter a number from 1 to 10: " overwrite
 			fi
 		done
 	fi
@@ -249,7 +246,7 @@ zero_file() {
 		echo -e "You have chosen \"${YELLOW}$path${WHITE}\""
 		echo -e "To be written over \"${YELLOW}$overwrite${WHITE}\" times"
 		echo -e "${CYAN}Would you like to continue?${WHITE}\nY/n/e${NOCOLOR}"
-		read ans
+		read -r ans
 		if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 			echo -e "${WHITE}================================================================================"
 			#### Uncomment the following to list contents of chosen directory
@@ -264,10 +261,11 @@ zero_file() {
 				#echo -e "\n${WHITE}Contents of \"${YELLOW}$path${NOCOLOR}\" ${WHITE}are:${NOCOLOR}"
 				#ls $path
 				echo -e "\n${YELLOW}Zero file details:${NOCOLOR}"
-				file $path/zero_file.img
-				let count+=1
+				file "$path"/zero_file.img
+				count=$((count+1))
+#				let count+=1
 			done
-			ls -sh $path/zero_file.img
+			ls -sh "$path"/zero_file.img
 			sleep 1
 			echo -e "Now syncing file systems that are journaled i.e. btrfs, ext4"
 			echo -e "This will ensure that any copies created by the system will be overwritten, too."
@@ -275,7 +273,7 @@ zero_file() {
 			# Sync file systems so that journald systems will delete copies
 			sync
 			echo -e "Now removing zero file..."
-			rm $path/zero_file.img
+			rm "$path"/zero_file.img
 			if [[ $? == 0 ]]; then
 				sleep 1
 				echo "Removed successfully"
@@ -301,7 +299,7 @@ zero_file() {
 find_zero_files() {
 	#### Check for zero file laying around in the system
 	echo -e "\n${CYAN}Would you like to search the system for a zero file (zero_file.img)?\n${WHITE}Y/n/e"
-	read ans
+	read -r ans
 	if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 		echo -e "Searching..."
 		is_there=$(find / -name zero_file.img 2>/dev/null)
@@ -310,12 +308,12 @@ find_zero_files() {
 			echo -e "Zero file found here: "
 			echo -e "$is_there"
 			echo -e "Would you like to remove it?\nY/n/e"
-			read ans
+			read -r ans
 			if [[ $ans != "e" ]]; then
 				echo -e "Retrieving zero files for deletion..."
 				find / -name zero_file.img -exec rm {} \;
 				echo -e "File removed successfully. Press Enter to continue..."
-				read anything
+				read -r anything
 				if [[ ! $? == 0 ]]; then
 					echo -e "${RED}There seems to have been an error removing those files!${NOCOLOR}"
 				fi
