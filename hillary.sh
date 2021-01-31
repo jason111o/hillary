@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #### Written by Jason Pippin
-version="hillary-1.4"
+version="hillary-1.5"
 
 ######################################Main######################################
 main() {
