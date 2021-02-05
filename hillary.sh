@@ -12,7 +12,6 @@ main() {
 		free_cache
 		user_set
 		run_bleachbit
-		partition_display
 		zero_file
 		find_zero_files
 	done
@@ -135,7 +134,7 @@ user_set() {
 	all_users=()
 	for x in /home/*; do
 		if [[ -d "$x" ]]; then
-			all_users+=("$x")
+			all_users+=($(echo $x | cut -d / -f 3))
 		fi
 	done
 }
@@ -162,12 +161,12 @@ run_bleachbit() {
 	if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 		for x in "${all_users[@]}"; do
 			echo -e "\n${WHITE}Starting \"bleachbit\" as user ${YELLOW}\"$x\"${NOCOLOR}"
-			if [[ $anything != "n" ]] && [[ $anything != "e" ]]; then
+			if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 				su "$x" -c bleachbit 2>/dev/null
 				sleep 1
-			elif [[ $anything == "n" ]]; then
+			elif [[ $ans == "n" ]]; then
 				break
-			elif [[ $anything == "e" ]]; then
+			elif [[ $ans == "e" ]]; then
 				echo "${WHITE}Exiting...${NOCOLOR}"
 				sleep 1
 				exit 0
@@ -177,8 +176,8 @@ run_bleachbit() {
 		if [[ $EUID == 0 ]]; then
 			echo -e "\n${WHITE}Starting \"bleachbit\" as user ${RED}\"root\"${NOCOLOR}"
 			echo -e "${WHITE}Continue?\nY/n/e${NOCOLOR}"
-			read -r anything
-			if [[ $anything != "n" ]] && [[ $anything != "e" ]]; then
+			read -r ans
+			if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
 				echo -e "${WHITE}Run in graphical mode?\ny/N${NOCOLOR}"
 				read -r ans
 				if [[ $ans != "y" ]]; then
@@ -186,9 +185,9 @@ run_bleachbit() {
 				elif [[ $ans == "y" ]]; then
 					bleachbit 2>/dev/null
 				fi
-			elif [[ $anything == "n" ]]; then
+			elif [[ $ans == "n" ]]; then
 				return
-			elif [[ $anything == "e" ]]; then
+			elif [[ $ans == "e" ]]; then
 				echo -e "${WHITE}Exiting...${NOCOLOR}"
 				sleep 2
 				exit 0
@@ -207,19 +206,29 @@ run_bleachbit() {
 	fi
 }
 
-partition_display() {
-	clear
-	echo -e "${YELLOW}Here is what we know about the drives/mounts of your file system..."
-	echo -e "${WHITE}================================================================================${NOCOLOR}"
-	df -h
-	echo -e "${WHITE}================================================================================${NOCOLOR}"
-}
-
 zero_file() {
 	#### Ask user to type in a path to create a zero file and how many times to do it
-	echo -e "${CYAN}\nType in path  as shown under \"Mounted On\""
+	echo -e "${CYAN}\nSelect a path for overwriting free space and deleted data"
+	echo -e "1. /home [Default]\n2. /root\n3. /\n4. Enter path manually"
 	echo -e "${WHITE}e/ENTER${NOCOLOR}"
-	read -r path
+	read -r selection
+	if [[ $selection == "1" ]]; then
+	  path=/home
+	elif [[ $selection == "2" ]]; then
+	  path=/root
+	elif [[ $selection == "3" ]]; then
+	  path=/
+	elif [[ $selection == "4" ]]; then
+	  read -r -p "Type in the path now: " ans
+	  # clean up the last slash if entered
+	  path=$(echo "$ans" | sed 's:/*$::')
+	elif [[ $selection == "e" ]] || [[ $selection == "E" ]]; then
+	  path=$selection
+	else
+	  echo "Going with the default..."
+	  sleep 1
+	  path=/home
+	fi
 	if [[ -d $path ]]; then
 		echo -e "${CYAN}How many times would you like to overwrite?${NOCOLOR}"
 		read -r overwrite
@@ -263,7 +272,6 @@ zero_file() {
 				echo -e "\n${YELLOW}Zero file details:${NOCOLOR}"
 				file "$path"/zero_file.img
 				count=$((count+1))
-#				let count+=1
 			done
 			ls -sh "$path"/zero_file.img
 			sleep 1
@@ -305,18 +313,19 @@ find_zero_files() {
 		is_there=$(find / -name zero_file.img 2>/dev/null)
 		echo -e "Search completed."
 		if [[ "$is_there" ]]; then
-			echo -e "Zero file found here: "
-			echo -e "$is_there"
+			echo -e "Zero file found: ${RED}$is_there${WHITE} "
 			echo -e "Would you like to remove it?\nY/n/e"
 			read -r ans
-			if [[ $ans != "e" ]]; then
+			if [[ $ans != "e" ]] && [[ $ans != "n" ]]; then
 				echo -e "Retrieving zero files for deletion..."
 				find / -name zero_file.img -exec rm {} \;
-				echo -e "File removed successfully. Press Enter to continue..."
+				echo -e "\nFile removed successfully. Press Enter to continue..."
 				read -r anything
 				if [[ ! $? == 0 ]]; then
 					echo -e "${RED}There seems to have been an error removing those files!${NOCOLOR}"
 				fi
+			elif [[ $ans == "n" ]]; then
+	      return
 			elif [[ $ans == "e" ]]; then
 				echo -e "${WHITE}Exiting...${NOCOLOR}"
 				sleep 1
@@ -324,6 +333,8 @@ find_zero_files() {
 			fi
 		elif [[ ! $is_there ]]; then
 			echo -e "${WHITE}No zero files found${NOCOLOR}"
+			echo -e "\nPress ENTER to continue"
+			read -r anything
 		elif [[ $ans == "e" ]]; then
 			echo -e "${WHITE}Exiting...${NOCOLOR}"
 			sleep 1
