@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #### Written by Jason Pippin
-version="hillary-1.5"
+
+#### Please set versioning before submitting changes ####
+version="hillary-2.0"
 
 ######################################Main######################################
 main() {
@@ -10,7 +12,6 @@ main() {
   dependencies_needed
   while true; do
     free_cache
-    user_set
     run_bleachbit
     zero_file
     find_zero_files
@@ -36,13 +37,14 @@ check_su() {
 
 #### Check for dependencies
 check_for_dependencies() {
-  depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync")
+  depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync" "find" "command")
   depends_not_installed=()
-  echo -e "Checking dependencies..."
+  echo -e "Checking dependencies"
   for x in "${depends[@]}"; do
+    echo -n " *"
     xpath=$(command -v "$x")
     if [[ "$xpath" ]]; then
-      sleep 0.25
+      sleep .5
     elif [[ ! "$xpath" ]]; then
       sleep 0.25
       depends_not_installed+=("$x")
@@ -54,21 +56,10 @@ check_for_dependencies() {
 dependencies_needed() {
   len=${#depends_not_installed}
   while [ "$len" -gt 0 ]; do
-    echo -e "${WHITE}Install missing dependencies? y/n/e${NOCOLOR}"
+    echo -e "${WHITE}Install missing dependencies? Y/n/e/v${NOCOLOR}"
     read -r ans
-    if [[ "$ans" == "y" ]]; then
-      for x in "${depends_not_installed[@]}"; do
-        apt install "$x"
-        if [[ $? != 0 ]]; then
-          echo -e "${YELLOW}$x was not found in your distribution package sources."
-          echo -e "Check your distros documentation.${NOCOLOR}\n"
-        fi
-        check_for_dependencies
-        len=${#depends_not_installed}
-        if [[ $len == 0 ]]; then
-          echo -e "${WHITE}Dependencies have been satisfied. Press enter to continue...${NC}"
-        fi
-      done
+    if [[ "$ans" == "v" ]]; then
+      print_version
     elif [[ "$ans" == "n" ]]; then
       echo -e "${CYAN}This script needs..."
       for x in "${depends_not_installed[@]}"; do
@@ -82,6 +73,19 @@ dependencies_needed() {
       exit 1
     elif [[ "$len" == 0 ]]; then
       break
+    else
+      for x in "${depends_not_installed[@]}"; do
+        apt install "$x"
+        if [[ $? != 0 ]]; then
+          echo -e "${YELLOW}$x was not found in your distribution package sources."
+          echo -e "Check your distros documentation.${NOCOLOR}\n"
+        fi
+        check_for_dependencies
+        len=${#depends_not_installed}
+        if [[ $len == 0 ]]; then
+          echo -e "${WHITE}Dependencies have been satisfied. Press enter to continue...${NC}"
+        fi
+      done
     fi
   done
 }
@@ -91,9 +95,18 @@ free_cache() {
   clear
   echo -e "${YELLOW}Current memory stat:${NOCOLOR}"
   free -h
-  echo -e "${CYAN}Would you like to free memory/caches?${WHITE}\nY/n/e${NOCOLOR}"
+  echo -e "${CYAN}Would you like to free memory/caches?${WHITE}\nY/n/e/v${NOCOLOR}"
   read -r ans
-  if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
+  if [[ $ans == "v" ]]; then
+    print_version
+    free_cache
+  elif [[ $ans == "n" ]]; then
+    return
+  elif [[ $ans == "e" ]]; then
+    echo -e "${WHITE}Exiting...${NOCOLOR}"
+    sleep 1
+    exit 0
+  else
     drop_caches_path=$(find /proc -name drop_caches 2>/dev/null)
     echo -e "${YELLOW}Applications/Programs may start slower after cleaning as the system resumes new cache creations."
     echo -e "${WHITE}1. Free page cache"
@@ -121,19 +134,7 @@ free_cache() {
         exit 1
       fi
     done
-  elif [[ $ans == "n" ]]; then
-    return
-  elif [[ $ans == "e" ]]; then
-    echo -e "${WHITE}Exiting...${NOCOLOR}"
-    sleep 1
-    exit 0
   fi
-}
-
-#### Set all users whom have a home directory to an array
-user_set() {
-  all_users=()
-  mapfil -t all_users < <(ls /home)
 }
 
 #### Setting up bleachbit to run all cleaners, but the swap and writing zeroes
@@ -146,35 +147,48 @@ bleach_func() {
 }
 #### Start bleachbit GUI for standard users then run the above function for root
 run_bleachbit() {
+  #### Set all users whom have a home directory to an array
+  all_users=()
+  mapfile -t all_users < <(ls /home/)
   #### Give some info on the process and then ask for an answer
   clear
   echo -e "${CYAN}We will be using bleachbit as the standard tool for marking directories and files then removing them."
   echo -e "After this is done, we will not rely on bleachbit to overwrite the systems free space for security."
   echo -e "We will instead do it ourselves with the \"dd\" low level byte tool and \"sync\" for journald fs."
   echo -e "${YELLOW}Note: Bleachbit will run in graphical mode for standard users."
-  echo -e "${WHITE}Start Bleachbit?\nY/n/e${NOCOLOR}"
+  echo -e "${WHITE}Start Bleachbit?\nY/n/e/v${NOCOLOR}"
   read -r ans
   #### If the answer is yes then bleachbit will be run by every user listed in the /home directory
-  if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
-    for x in "${all_users[@]}"; do
-      echo -e "\n${WHITE}Starting \"bleachbit\" as user ${YELLOW}\"$x\"${NOCOLOR}"
-      if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
-        su "$x" -c bleachbit 2>/dev/null
-        sleep 1
-      elif [[ $ans == "n" ]]; then
-        break
-      elif [[ $ans == "e" ]]; then
-        echo "${WHITE}Exiting...${NOCOLOR}"
-        sleep 1
-        exit 0
-      fi
-    done
-    #### Now it is run again as root
+  if [[ $ans == "v" ]]; then
+    print_version
+    run_bleachbit
+  elif [[ $ans == "e" ]]; then
+    echo -e "${WHITE}Exiting...${NOCOLOR}"
+    sleep 1
+    exit 0
+  elif [[ $ans == "n" ]]; then
+    return
+  else
+    #### Double check for super powers and start bleachbit as each user found in the /home directory
     if [[ $EUID == 0 ]]; then
+      for x in "${all_users[@]}"; do
+        echo -e "\n${WHITE}Starting \"bleachbit\" as user ${YELLOW}\"$x\"${NOCOLOR}"
+        sleep 1
+        su "$x" -c bleachbit 2>/dev/null
+      done
       echo -e "\n${WHITE}Starting \"bleachbit\" as user ${RED}\"root\"${NOCOLOR}"
-      echo -e "${WHITE}Continue?\nY/n/e${NOCOLOR}"
+      echo -e "${WHITE}Continue?\nY/n/e/v${NOCOLOR}"
       read -r ans
-      if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
+      if [[ $ans == "v" ]]; then
+        print_version
+        run_bleachbit
+      elif [[ $ans == "n" ]]; then
+        return
+      elif [[ $ans == "e" ]]; then
+        echo -e "${WHITE}Exiting...${NOCOLOR}"
+        sleep 2
+        exit 0
+      else
         echo -e "${WHITE}Run in graphical mode?\ny/N${NOCOLOR}"
         read -r ans
         if [[ $ans != "y" ]]; then
@@ -182,24 +196,12 @@ run_bleachbit() {
         elif [[ $ans == "y" ]]; then
           bleachbit 2>/dev/null
         fi
-      elif [[ $ans == "n" ]]; then
-        return
-      elif [[ $ans == "e" ]]; then
-        echo -e "${WHITE}Exiting...${NOCOLOR}"
-        sleep 2
-        exit 0
       fi
     else
       #### Just in case permissions are lost we then exit
       echo -e "${RED}We lost permissions somewhere... exiting...${NOCOLOR}"
       exit 1
     fi
-  elif [[ $ans == "e" ]]; then
-    echo -e "${WHITE}Exiting...${NOCOLOR}"
-    sleep 1
-    exit 0
-  elif [[ $ans == "n" ]]; then
-    return
   fi
 }
 
@@ -251,9 +253,16 @@ zero_file() {
     echo -e "Your system may become unresponsive during this process, be patient..."
     echo -e "You have chosen \"${YELLOW}$path${WHITE}\""
     echo -e "To be written over \"${YELLOW}$overwrite${WHITE}\" times"
-    echo -e "${CYAN}Would you like to continue?${WHITE}\nY/n/e${NOCOLOR}"
+    echo -e "${CYAN}Would you like to continue?${WHITE}\nY/n/e/v${NOCOLOR}"
     read -r ans
-    if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
+    if [[ $ans == "v" ]]; then
+      print_version
+    elif [[ $ans == "n" ]]; then
+      echo -e "${WHITE}Moving on...\n${NOCOLOR}"
+    elif [[ $ans == "e" ]]; then
+      echo -e "${WHITE}Exiting...${NOCOLOR}"
+      exit 0
+    else
       echo -e "${WHITE}================================================================================"
       #### Uncomment the following to list contents of chosen directory
       #echo -e "Contents of \"${YELLOW}$path${NOCOLOR}\" ${WHITE}are:${NOCOLOR}"
@@ -292,20 +301,23 @@ zero_file() {
       #ls $path
       echo -e "${WHITE}================================================================================"
       echo -e "${NOCOLOR}"
-    elif [[ $ans == "n" ]]; then
-      echo -e "${WHITE}Moving on...\n${NOCOLOR}"
-    elif [[ $ans == "e" ]]; then
-      echo -e "${WHITE}Exiting...${NOCOLOR}"
-      exit 0
     fi
   fi
 }
 
 find_zero_files() {
   #### Check for zero file laying around in the system
-  echo -e "\n${CYAN}Would you like to search the system for a zero file (zero_file.img)?\n${WHITE}Y/n/e"
+  echo -e "\n${CYAN}Would you like to search the system for a zero file (zero_file.img)?\n${WHITE}Y/n/e/v"
   read -r ans
-  if [[ $ans != "n" ]] && [[ $ans != "e" ]]; then
+  if [[ $ans == "v" ]]; then
+    print_version
+  elif [[ $ans == "e" ]]; then
+    echo -e "${WHITE}Exiting...${WHITE}"
+    sleep 1
+    exit 0
+  elif [[ $ans == "n" ]]; then
+    return
+  else
     echo -e "Searching..."
     is_there=$(find / -name zero_file.img 2>/dev/null)
     echo -e "Search completed."
@@ -322,7 +334,7 @@ find_zero_files() {
           echo -e "${RED}There seems to have been an error removing those files!${NOCOLOR}"
         fi
       elif [[ $ans == "n" ]]; then
-        return
+        echo -e "${WHITE}Moving on...\n${NOCOLOR}"
       elif [[ $ans == "e" ]]; then
         echo -e "${WHITE}Exiting...${NOCOLOR}"
         sleep 1
@@ -337,11 +349,13 @@ find_zero_files() {
       sleep 1
       exit 1
     fi
-  elif [[ $ans == "e" ]]; then
-    echo -e "${WHITE}Exiting...${WHITE}"
-    sleep 1
-    exit 0
   fi
 }
 
+print_version() {
+  echo -e "\n${YELLOW}$version${NOCOLOR}"
+  sleep 2
+}
+
+#### Run main function ####
 main
