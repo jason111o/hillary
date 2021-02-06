@@ -2,7 +2,7 @@
 #### Written by Jason Pippin
 
 #### Please set versioning before submitting changes ####
-version="hillary-2.1"
+version="hillary-2.2"
 
 #### Pass some time graphically while searching for helper files
 echo $version

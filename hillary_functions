@@ -299,7 +299,7 @@ find_zero_files() {
       read -r ans
       if [[ $ans != "e" ]] && [[ $ans != "n" ]]; then
         echo -e "Retrieving zero files for deletion..."
-        find / -name zero.file -exec rm {} \;
+        find / -name zero.file -exec rm {} \; 2>/dev/null
         echo -e "\nFile removed successfully. Press Enter to continue..."
         read -r
         if [[ ! $? == 0 ]]; then
