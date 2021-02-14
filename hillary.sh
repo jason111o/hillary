@@ -2,10 +2,10 @@
 #### Written by Jason Pippin
 
 #### Please set versioning before submitting changes ####
-version="hillary-3.0"
+version="hillary-3.1"
 creator="Jason Pippin"
 
-echo -e "$version\nCreated By: $creator\n"
+echo -e "\n$version\nCreated By: $creator\n"
 
 ######################################Main######################################
 #### I use this function for pure readability. main() is the last thing run in
@@ -360,3 +360,6 @@ print_version() {
   echo -e "\n${YELLOW}$version${NOCOLOR}"
   sleep 2
 }
+
+#### Run main()
+main
