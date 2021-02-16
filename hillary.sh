@@ -242,7 +242,7 @@ zero_file() {
     sleep 1
   fi
   if [[ -d $path ]]; then
-    echo -e "${CYAN}How many times would you like to overwrite?${NOCOLOR}"
+    echo -e "${CYAN}How many times would you like to overwrite? (Enter 0 to skip)${NOCOLOR}"
     read -r overwrite
     while true; do
       if [[ $overwrite -ge 1 ]] && [[ $overwrite -le 10 ]]; then
