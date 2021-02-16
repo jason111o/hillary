@@ -5,12 +5,11 @@
 version="hillary-3.1"
 creator="Jason Pippin"
 
-echo -e "\n$version\nCreated By: $creator\n"
-
 ######################################Main######################################
 #### I use this function for pure readability. main() is the last thing run in
 #### this script
 function main() {
+  print_version
   check_su
   check_for_dependencies
   dependencies_needed
@@ -42,7 +41,7 @@ check_su() {
 #### Define all the functions for main() ####
 #### Check for dependencies
 check_for_dependencies() {
-  depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync" "find" "command")
+  depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync" "find" "command" "df" "echo")
   depends_not_installed=()
   echo -e "Checking dependencies"
   for x in "${depends[@]}"; do
@@ -159,7 +158,7 @@ run_bleachbit() {
   echo -e "${CYAN}We will be using bleachbit as the standard tool for marking directories and files then removing them."
   echo -e "After this is done, we will not rely on bleachbit to overwrite the systems free space for security."
   echo -e "We will instead do it ourselves with the \"dd\" low level byte tool and \"sync\" for journald fs."
-  echo -e "${YELLOW}Note: Bleachbit will run in graphical mode for standard users."
+  echo -e "${YELLOW}Note: Bleachbit will only run in graphical mode for standard users."
   echo -e "${WHITE}Start Bleachbit?\nY/n/e/v${NOCOLOR}"
   read -r ans
   #### If the answer is yes then bleachbit will be run by every user listed in the /home directory
@@ -184,6 +183,7 @@ run_bleachbit() {
       echo -e "${WHITE}Continue?\nY/n/e/v${NOCOLOR}"
       read -r ans
       if [[ $ans == "v" ]]; then
+        # print version and start over
         print_version
         run_bleachbit
       elif [[ $ans == "n" ]]; then
@@ -193,11 +193,11 @@ run_bleachbit() {
         sleep 2
         exit 0
       else
-        echo -e "${WHITE}Run in graphical mode?\ny/N${NOCOLOR}"
+        echo -e "${WHITE}Run in graphical mode?\nY/n${NOCOLOR}"
         read -r ans
-        if [[ $ans != "y" ]]; then
+        if [[ $ans != "n" ]] || [[ $ans == "N" ]]; then
           bleach_func
-        elif [[ $ans == "y" ]]; then
+        else
           bleachbit 2>/dev/null
         fi
       fi
@@ -210,11 +210,11 @@ run_bleachbit() {
 }
 ### This here is how we gonna overwrite deleted files and free space
 zero_file() {
+  clear
   #### Ask user to type in a path to create a zero file and how many times to do it
-  echo -e "${CYAN}\nSelect a path for overwriting free space and deleted data"
-  echo -e "1. /home [Default]\n2. /root\n3. /\n4. Enter path manually"
-  echo -e "${WHITE}e/ENTER${NOCOLOR}"
-  read -r selection
+  echo -e "${CYAN}Select a path for overwriting free space and deleted data"
+  echo -e "1. /home [Default]\n2. /root\n3. /\n4. Enter path manually${NOCOLOR}"
+  read -r -p "Enter your selection: " selection
   if [[ $selection == "1" ]]; then
     path=/home
   elif [[ $selection == "2" ]]; then
@@ -222,15 +222,24 @@ zero_file() {
   elif [[ $selection == "3" ]]; then
     path=/
   elif [[ $selection == "4" ]]; then
+    echo -e "\n${YELLOW}Here is a list of mounted file systems...\n${NOCOLOR}"
+    df -hT
+    echo -e "\n${RED}WARNING: With great power comes great responsibility!${NOCOLOR}"
     read -r -p "Type in the path now: " ans
     # clean up the last slash if entered
-    path=$(sed 's:/*$::' < <(echo "$ans"))
+    if [[ $ans == "/" ]]; then
+      path=/
+    else
+      path=$(sed 's:/*$::' < <(echo "$ans"))
+    fi
   elif [[ $selection == "e" ]] || [[ $selection == "E" ]]; then
-    path=$selection
-  else
-    echo "Going with the default..."
+    echo -e "${WHITE}Exiting...${NOCOLOR}"
     sleep 1
+    exit 0
+  else
     path=/home
+    echo "Going with the default... \"$path\""
+    sleep 1
   fi
   if [[ -d $path ]]; then
     echo -e "${CYAN}How many times would you like to overwrite?${NOCOLOR}"
@@ -238,8 +247,10 @@ zero_file() {
     while true; do
       if [[ $overwrite -ge 1 ]] && [[ $overwrite -le 10 ]]; then
         break
+      elif [[ $overwrite == 0 ]]; then
+        return
       else
-        read -r -p "Enter a number from 1 to 10: " overwrite
+        read -r -p "Enter a number from 1 to 10 to continue or 0 to skip: " overwrite
       fi
     done
   fi
@@ -315,6 +326,8 @@ find_zero_files() {
   read -r ans
   if [[ $ans == "v" ]]; then
     print_version
+    clear
+    find_zero_files
   elif [[ $ans == "e" ]]; then
     echo -e "${WHITE}Exiting...${WHITE}"
     sleep 1
@@ -357,7 +370,7 @@ find_zero_files() {
 }
 ### Print the current script version
 print_version() {
-  echo -e "\n${YELLOW}$version${NOCOLOR}"
+  echo -e "\n${YELLOW}$version\nCreated By: $creator${NOCOLOR}\n"
   sleep 2
 }
 
