@@ -2,7 +2,7 @@
 #### Written by Jason Pippin
 
 #### Please set versioning before submitting changes ####
-version="hillary-3.1"
+version="hillary-3.2"
 creator="Jason Pippin"
 
 ######################################Main######################################
