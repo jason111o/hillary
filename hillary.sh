@@ -195,7 +195,7 @@ run_bleachbit() {
       else
         echo -e "${WHITE}Run in graphical mode?\nY/n${NOCOLOR}"
         read -r ans
-        if [[ $ans != "n" ]] || [[ $ans == "N" ]]; then
+        if [[ $ans == "n" ]] || [[ $ans == "N" ]]; then
           bleach_func
         else
           bleachbit 2>/dev/null
