@@ -2,7 +2,7 @@
 #### Written by Jason Pippin
 
 #### Please set versioning before submitting changes ####
-version="hillary-3.2"
+version="hillary-3.3"
 creator="Jason Pippin"
 
 ######################################Main######################################
@@ -115,16 +115,17 @@ free_cache() {
     echo -e "${YELLOW}Applications/Programs may start slower after cleaning as the system resumes new cache creations."
     echo -e "${WHITE}1. Free page cache"
     echo -e "2. Free reclaimable slab objects (includes dentries and inodes)"
-    echo -e "3. Free page cache and slab objects\n1/2/3/n${NOCOLOR}"
+    echo -e "3. Free page cache and slab objects\n1/2/3 (DEFAULT)/n${NOCOLOR}"
     read -r num
     while true; do
-      if [[ $num != 1 ]] && [[ $num != 2 ]] && [[ $num != 3 ]] && [[ $num != "n" ]]; then
-        echo -e "${YELLOW}You must enter a 1, 2, or 3 for cache or \"n\" to continue.${NOCOLOR}"
+      if [[ $num != 1 ]] && [[ $num != 2 ]] && [[ $num != 3 ]] && [[ $num != "n" ]] && [[ $num != "" ]]; then
+        echo -e "${YELLOW}You must enter a 1, 2, or 3 for cache, RETURN/ENTER for default or \"n\" to continue.${NOCOLOR}"
         echo -e "${WHITE}1/2/3/n${NOCOLOR}"
         read -r num
+      elif [[ $num == "" ]]; then
+        num=3 #Default to clearing page cache and slab objects
       elif [[ $num == 1 ]] || [[ $num == 2 ]] || [[ $num == 3 ]]; then
-        # sync the system before clearing cache
-        sync
+        sync #Sync the system before clearing cache
         echo "$num" >"$drop_caches_path"
         sleep 1
         echo -e "${YELLOW}New memory stat:${NOCOLOR}"
