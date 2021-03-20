@@ -115,7 +115,7 @@ free_cache() {
     echo -e "${YELLOW}Applications/Programs may start slower after cleaning as the system resumes new cache creations."
     echo -e "${WHITE}1. Free page cache"
     echo -e "2. Free reclaimable slab objects (includes dentries and inodes)"
-    echo -e "3. Free page cache and slab objects\n1/2/3 (DEFAULT)/n${NOCOLOR}"
+    echo -e "3. Free page cache and slab objects [DEFAULT]\n1/2/3/n${NOCOLOR}"
     read -r num
     while true; do
       if [[ $num != 1 ]] && [[ $num != 2 ]] && [[ $num != 3 ]] && [[ $num != "n" ]] && [[ $num != "" ]]; then
