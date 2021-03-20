@@ -124,6 +124,8 @@ free_cache() {
         read -r num
       elif [[ $num == "" ]]; then
         num=3 #Default to clearing page cache and slab objects
+        echo -e "Default set to $num\n"
+        sleep 1
       elif [[ $num == 1 ]] || [[ $num == 2 ]] || [[ $num == 3 ]]; then
         sync #Sync the system before clearing cache
         echo "$num" >"$drop_caches_path"
