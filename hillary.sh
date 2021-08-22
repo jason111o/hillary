@@ -161,7 +161,7 @@ run_bleachbit() {
   echo -e "${CYAN}We will be using bleachbit as the standard tool for marking directories and files then removing them."
   echo -e "After this is done, we will not rely on bleachbit to overwrite the systems free space for security."
   echo -e "We will instead do it ourselves with the \"dd\" low level byte tool and \"sync\" for journald fs."
-  echo -e "${YELLOW}Note: Bleachbit will only run in graphical mode for standard users."
+  echo -e "${YELLOW}Note: Graphical mode may or may not work with root depending on your flavor of Linux OS."
   echo -e "${WHITE}Start Bleachbit?\nY/n/e/v${NOCOLOR}"
   read -r ans
   #### If the answer is yes then bleachbit will be run by every user listed in the /home directory
