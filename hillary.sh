@@ -2,7 +2,7 @@
 #### Written by Jason Pippin
 
 #### Please set versioning before submitting changes ####
-version="hillary-3.3"
+version="hillary-3.4"
 creator="Jason Pippin"
 
 ######################################Main######################################
@@ -43,12 +43,14 @@ check_su() {
 check_for_dependencies() {
   depends=("sudo" "sleep" "bleachbit" "dd" "free" "sync" "find" "command" "df" "echo")
   depends_not_installed=()
-  echo -e "Checking dependencies"
+  printf "Checking dependencies"
+  sleep 1
   for x in "${depends[@]}"; do
-    echo -n " *"
+    #echo -n " * "
+    printf " * "
     xpath=$(command -v "$x")
     if [[ "$xpath" ]]; then
-      sleep .5
+      sleep .25
     elif [[ ! "$xpath" ]]; then
       sleep 0.25
       depends_not_installed+=("$x")
@@ -245,6 +247,8 @@ zero_file() {
     sleep 1
   fi
   if [[ -d $path ]]; then
+    disk_space=$(df -h . | awk '{print $4}' | tail -n 1) # get free disk space
+    echo -e "\n${YELLOW}You have ${RED}$disk_space ${YELLOW}to be overwritten, so...${NOCOLOR}"
     echo -e "${CYAN}How many times would you like to overwrite? (Enter 0 to skip)${NOCOLOR}"
     read -r overwrite
     while true; do
@@ -264,7 +268,8 @@ zero_file() {
   elif [[ ! -d $path ]]; then
     echo -e "${WHITE}\"${NOCOLOR}$path${WHITE}\" does not exist... moving on${NOCOLOR}"
   elif [[ -d $path ]]; then
-    echo -e "\n${WHITE}Depending on the size of the free space, this action could take quite"
+    echo -e "\n${RED}\tClose any programs you may have open before continuing${NOCOLOR}"
+    echo -e "${WHITE} Depending on the size of the free space, this action could take quite"
     echo -e "a bit of time. You can press CTRL-C at any time to exit, but you will"
     echo -e "need to remove the zero file manually or restart this script and do a search"
     echo -e "for zero files if you are uncertain about its location."
@@ -299,8 +304,8 @@ zero_file() {
       done
       ls -sh "$path"/zero.file
       sleep 1
-      echo -e "Now syncing file systems that are journaled i.e. btrfs, ext4"
-      echo -e "This will ensure that any copies created by the system will be overwritten, too."
+      echo -e "Now syncing file systems that are journaled i.e. btrfs, ext4, or ntfs"
+      echo -e "This will ensure that any copies created by the journaled fs will be overwritten, too."
       sleep 1
       # Sync file systems so that journald systems will delete copies
       sync
